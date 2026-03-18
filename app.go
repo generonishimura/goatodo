@@ -13,9 +13,10 @@ import (
 )
 
 type App struct {
-	ctx         context.Context
-	db          *sql.DB
-	TaskHandler *presenter.TaskHandler
+	ctx          context.Context
+	db           *sql.DB
+	TaskHandler  *presenter.TaskHandler
+	HabitHandler *presenter.HabitHandler
 }
 
 func NewApp() *App {
@@ -31,12 +32,16 @@ func NewApp() *App {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 
-	repo := sqlite.NewTaskRepository(db)
-	taskHandler := presenter.NewTaskHandler(repo)
+	taskRepo := sqlite.NewTaskRepository(db)
+	taskHandler := presenter.NewTaskHandler(taskRepo)
+
+	habitRepo := sqlite.NewDailyReviewRepository(db)
+	habitHandler := presenter.NewHabitHandler(habitRepo, taskRepo)
 
 	return &App{
-		db:          db,
-		TaskHandler: taskHandler,
+		db:           db,
+		TaskHandler:  taskHandler,
+		HabitHandler: habitHandler,
 	}
 }
 

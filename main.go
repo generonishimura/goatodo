@@ -26,6 +26,7 @@ func main() {
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app.TaskHandler,
+			app.HabitHandler,
 		},
 	})
 
