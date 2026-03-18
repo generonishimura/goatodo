@@ -51,7 +51,7 @@ func (t *Task) TransitionTo(newStatus Status) shared.Result[bool] {
 		return shared.Err[bool](ErrInvalidTransition)
 	}
 	t.status = newStatus
-	if newStatus == StatusDone {
+	if newStatus == StatusDone && t.completedAt == nil {
 		now := time.Now()
 		t.completedAt = &now
 	}

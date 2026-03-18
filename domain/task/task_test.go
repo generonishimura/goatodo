@@ -164,6 +164,22 @@ func TestTaskSetPriority(t *testing.T) {
 	})
 }
 
+func TestTaskTransitionToDoneDoesNotOverwriteCompletedAt(t *testing.T) {
+	t.Run("done -> done does not change completedAt", func(t *testing.T) {
+		tk := mustNewTask(t, "Test task")
+		tk.TransitionTo(task.StatusDone)
+		original := tk.CompletedAt()
+
+		// Wait a tiny bit to ensure time would differ if overwritten
+		time.Sleep(time.Millisecond)
+		tk.TransitionTo(task.StatusDone)
+
+		if tk.CompletedAt() != original {
+			t.Error("completedAt should not change on done -> done transition")
+		}
+	})
+}
+
 func TestTaskTransitionToInvalidStatus(t *testing.T) {
 	t.Run("rejects unknown status string", func(t *testing.T) {
 		tk := mustNewTask(t, "Test task")
