@@ -2,6 +2,7 @@ package task_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/i-nishimura/goatodo/domain/task"
 )
@@ -160,6 +161,46 @@ func TestTaskUpdateTitle(t *testing.T) {
 			t.Errorf("title should remain unchanged, got '%s'", tk.Title())
 		}
 	})
+}
+
+func TestTaskSetDescription(t *testing.T) {
+	t.Run("can set description", func(t *testing.T) {
+		tk := mustNewTask(t, "Test task")
+		tk.SetDescription("Some description")
+
+		if tk.Description() != "Some description" {
+			t.Errorf("expected description 'Some description', got '%s'", tk.Description())
+		}
+	})
+}
+
+func TestReconstruct(t *testing.T) {
+	t.Run("reconstructs a task from persisted data", func(t *testing.T) {
+		tk := task.Reconstruct("id-1", "Title", "Desc", task.StatusDoing, task.PriorityHigh, tk_time(), nil)
+
+		if tk.ID() != "id-1" {
+			t.Errorf("expected ID 'id-1', got '%s'", tk.ID())
+		}
+		if tk.Title() != "Title" {
+			t.Errorf("expected title 'Title', got '%s'", tk.Title())
+		}
+		if tk.Description() != "Desc" {
+			t.Errorf("expected description 'Desc', got '%s'", tk.Description())
+		}
+		if tk.Status() != task.StatusDoing {
+			t.Errorf("expected status doing, got %s", tk.Status())
+		}
+		if tk.Priority() != task.PriorityHigh {
+			t.Errorf("expected priority high, got %d", tk.Priority())
+		}
+		if tk.CompletedAt() != nil {
+			t.Error("expected nil completedAt")
+		}
+	})
+}
+
+func tk_time() time.Time {
+	return time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 }
 
 func mustNewTask(t *testing.T, title string) *task.Task {
