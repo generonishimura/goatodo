@@ -44,6 +44,9 @@ var validTransitions = map[Status]map[Status]bool{
 }
 
 func (t *Task) TransitionTo(newStatus Status) shared.Result[bool] {
+	if !IsValidStatus(newStatus) {
+		return shared.Err[bool](ErrInvalidStatus)
+	}
 	if allowed, ok := validTransitions[t.status][newStatus]; !ok || !allowed {
 		return shared.Err[bool](ErrInvalidTransition)
 	}
@@ -55,8 +58,12 @@ func (t *Task) TransitionTo(newStatus Status) shared.Result[bool] {
 	return shared.Ok(true)
 }
 
-func (t *Task) SetPriority(p Priority) {
+func (t *Task) SetPriority(p Priority) shared.Result[bool] {
+	if !IsValidPriority(p) {
+		return shared.Err[bool](ErrInvalidPriority)
+	}
 	t.priority = p
+	return shared.Ok(true)
 }
 
 func (t *Task) UpdateTitle(title string) shared.Result[bool] {

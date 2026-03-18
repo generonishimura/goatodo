@@ -42,7 +42,10 @@ func (uc *UpdateTask) Execute(input UpdateTaskInput) shared.Result[*domtask.Task
 	}
 
 	if input.Priority != nil {
-		t.SetPriority(*input.Priority)
+		prioResult := t.SetPriority(*input.Priority)
+		if prioResult.IsErr() {
+			return shared.Err[*domtask.Task](prioResult.Error())
+		}
 	}
 
 	saveResult := uc.repo.Save(t)

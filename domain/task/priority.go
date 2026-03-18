@@ -8,3 +8,7 @@ const (
 	PriorityMedium Priority = 2
 	PriorityHigh   Priority = 3
 )
+
+func IsValidPriority(p Priority) bool {
+	return p >= PriorityNone && p <= PriorityHigh
+}

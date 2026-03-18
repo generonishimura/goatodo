@@ -129,10 +129,51 @@ func TestTaskStatusTransition(t *testing.T) {
 func TestTaskSetPriority(t *testing.T) {
 	t.Run("can set priority on a task", func(t *testing.T) {
 		tk := mustNewTask(t, "Test task")
-		tk.SetPriority(task.PriorityHigh)
+		result := tk.SetPriority(task.PriorityHigh)
 
+		if result.IsErr() {
+			t.Fatalf("expected Ok, got Err: %s", result.Error())
+		}
 		if tk.Priority() != task.PriorityHigh {
 			t.Errorf("expected priority high, got %d", tk.Priority())
+		}
+	})
+
+	t.Run("rejects invalid priority value", func(t *testing.T) {
+		tk := mustNewTask(t, "Test task")
+		result := tk.SetPriority(task.Priority(99))
+
+		if result.IsOk() {
+			t.Fatal("expected Err, got Ok")
+		}
+		if result.Error() != task.ErrInvalidPriority {
+			t.Errorf("expected error '%s', got '%s'", task.ErrInvalidPriority, result.Error())
+		}
+		if tk.Priority() != task.PriorityNone {
+			t.Errorf("priority should remain unchanged, got %d", tk.Priority())
+		}
+	})
+
+	t.Run("rejects negative priority value", func(t *testing.T) {
+		tk := mustNewTask(t, "Test task")
+		result := tk.SetPriority(task.Priority(-1))
+
+		if result.IsOk() {
+			t.Fatal("expected Err, got Ok")
+		}
+	})
+}
+
+func TestTaskTransitionToInvalidStatus(t *testing.T) {
+	t.Run("rejects unknown status string", func(t *testing.T) {
+		tk := mustNewTask(t, "Test task")
+		result := tk.TransitionTo(task.Status("invalid"))
+
+		if result.IsOk() {
+			t.Fatal("expected Err, got Ok")
+		}
+		if result.Error() != task.ErrInvalidStatus {
+			t.Errorf("expected error '%s', got '%s'", task.ErrInvalidStatus, result.Error())
 		}
 	})
 }
