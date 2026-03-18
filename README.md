@@ -74,7 +74,7 @@ goatodo/
 
 ### 前提条件
 
-- Go 1.23+
+- Go 1.25+
 - Node.js 20+
 - [Wails CLI v2](https://wails.io/docs/gettingstarted/installation)
 
