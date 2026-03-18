@@ -11,6 +11,7 @@
   let editingId = null;
   let addTaskComponent;
   let mode = 'normal';
+  let theme = 'dark';
 
   // These will be provided by Wails bindings
   let api = null;
@@ -19,6 +20,13 @@
   let todayReview = null;
 
   onMount(async () => {
+    // Restore theme preference
+    const saved = localStorage.getItem('goatodo-theme');
+    if (saved === 'light' || saved === 'dark') {
+      theme = saved;
+    }
+    applyTheme(theme);
+
     // Dynamic import of Wails bindings (generated at build time)
     try {
       const mod = await import('../wailsjs/go/presenter/TaskHandler.js');
@@ -160,6 +168,10 @@
         e.preventDefault();
         if (tasks.length > 0) selectedIndex = 0;
         break;
+      case 't':
+        e.preventDefault();
+        toggleTheme();
+        break;
     }
   }
 
@@ -194,6 +206,20 @@
     }
   }
 
+  function applyTheme(t) {
+    if (t === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    applyTheme(theme);
+    localStorage.setItem('goatodo-theme', theme);
+  }
+
   $: doneCount = tasks.filter(t => t.status === 'done').length;
 </script>
 
@@ -202,6 +228,13 @@
 <main>
   <header>
     <h1>goatodo</h1>
+    <button
+      class="theme-toggle"
+      on:click={toggleTheme}
+      aria-label="Toggle theme"
+    >
+      {theme === 'dark' ? '&#9788;' : '&#9790;'}
+    </button>
   </header>
 
   <HabitDashboard
@@ -243,6 +276,7 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
+    justify-content: space-between;
     -webkit-app-region: drag;
   }
 
@@ -251,5 +285,22 @@
     font-weight: 600;
     color: var(--accent);
     letter-spacing: 0.5px;
+  }
+
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 16px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .theme-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
   }
 </style>
