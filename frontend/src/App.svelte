@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import TaskList from './lib/components/TaskList.svelte';
   import AddTask from './lib/components/AddTask.svelte';
   import StatusBar from './lib/components/StatusBar.svelte';
@@ -107,6 +107,9 @@
         e.preventDefault();
         isAdding = true;
         mode = 'insert';
+        tick().then(() => {
+          if (addTaskComponent) addTaskComponent.focus();
+        });
         break;
       case 'x':
         e.preventDefault();
@@ -144,11 +147,11 @@
         break;
       case 'G':
         e.preventDefault();
-        selectedIndex = tasks.length - 1;
+        if (tasks.length > 0) selectedIndex = tasks.length - 1;
         break;
       case 'g':
         e.preventDefault();
-        selectedIndex = 0;
+        if (tasks.length > 0) selectedIndex = 0;
         break;
     }
   }

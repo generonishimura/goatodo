@@ -55,7 +55,7 @@
   class:done={task.status === 'done'}
   on:click={() => dispatch('select')}
 >
-  <button class="status-btn" on:click|stopPropagation={() => dispatch('toggleStatus')}>
+  <button class="status-btn" aria-label="Toggle status: {task.status}" on:click|stopPropagation={() => dispatch('toggleStatus')}>
     <span class="status-icon" class:done-icon={task.status === 'done'}>
       {statusIcons[task.status] || '○'}
     </span>

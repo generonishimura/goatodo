@@ -31,6 +31,7 @@
     bind:value={title}
     on:keydown={handleKeydown}
     placeholder="New task... (Enter to add, Esc to cancel)"
+    aria-label="New task title"
     class="add-input"
     autofocus
   />
