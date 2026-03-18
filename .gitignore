@@ -1,0 +1,9 @@
+build/bin
+node_modules
+frontend/dist
+*.db
+*.sqlite
+*.exe
+.DS_Store
+/goatodo
+HANDOFF.md
