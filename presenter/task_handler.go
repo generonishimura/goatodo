@@ -24,10 +24,6 @@ func NewTaskHandler(repo domtask.Repository) *TaskHandler {
 	}
 }
 
-type CreateTaskRequest struct {
-	Title string `json:"title"`
-}
-
 type UpdateTaskRequest struct {
 	ID       string  `json:"id"`
 	Title    *string `json:"title,omitempty"`
@@ -73,6 +69,9 @@ func (h *TaskHandler) UpdateTask(req UpdateTaskRequest) TaskResponse {
 	}
 	if req.Status != nil {
 		s := domtask.Status(*req.Status)
+		if !domtask.IsValidStatus(s) {
+			return TaskResponse{Success: false, Error: domtask.ErrInvalidStatus}
+		}
 		input.Status = &s
 	}
 	if req.Priority != nil {
