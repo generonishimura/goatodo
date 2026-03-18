@@ -24,6 +24,8 @@ func NewApp() *App {
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
 
 	if err := sqlite.Migrate(db); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
@@ -54,6 +56,9 @@ func getDBPath() string {
 		return "goatodo.db"
 	}
 	dir := filepath.Join(homeDir, ".goatodo")
-	os.MkdirAll(dir, 0755)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Printf("failed to create data directory %s: %v, falling back to current directory", dir, err)
+		return "goatodo.db"
+	}
 	return filepath.Join(dir, "goatodo.db")
 }
