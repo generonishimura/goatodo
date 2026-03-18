@@ -9,6 +9,7 @@
   let editTitle = task.title;
   let editInput;
 
+  $: editTitle = task.title;
   $: if (editing && editInput) {
     editInput.focus();
   }
