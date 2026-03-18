@@ -77,6 +77,9 @@ func (r *TaskRepository) FindAll() shared.Result[[]*task.Task] {
 		}
 		tasks = append(tasks, result.Value())
 	}
+	if err := rows.Err(); err != nil {
+		return shared.Err[[]*task.Task](fmt.Sprintf("error iterating tasks: %v", err))
+	}
 	return shared.Ok(tasks)
 }
 
