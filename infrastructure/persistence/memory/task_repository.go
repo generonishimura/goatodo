@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/i-nishimura/goatodo/domain/shared"
@@ -42,6 +43,9 @@ func (r *TaskRepository) FindAll() shared.Result[[]*task.Task] {
 	for _, t := range r.tasks {
 		result = append(result, t)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt().After(result[j].CreatedAt())
+	})
 	return shared.Ok(result)
 }
 
