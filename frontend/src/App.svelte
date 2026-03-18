@@ -3,6 +3,7 @@
   import TaskList from './lib/components/TaskList.svelte';
   import AddTask from './lib/components/AddTask.svelte';
   import StatusBar from './lib/components/StatusBar.svelte';
+  import HabitDashboard from './lib/components/HabitDashboard.svelte';
 
   let tasks = [];
   let selectedIndex = 0;
@@ -13,13 +14,19 @@
 
   // These will be provided by Wails bindings
   let api = null;
+  let habitApi = null;
+  let streak = { current: 0, longest: 0 };
+  let todayReview = null;
 
   onMount(async () => {
     // Dynamic import of Wails bindings (generated at build time)
     try {
       const mod = await import('../wailsjs/go/presenter/TaskHandler.js');
       api = mod;
+      const habitMod = await import('../wailsjs/go/presenter/HabitHandler.js');
+      habitApi = habitMod;
       await loadTasks();
+      await loadStreak();
     } catch (e) {
       console.warn('Wails bindings not available (dev mode?):', e);
     }
@@ -170,6 +177,23 @@
     selectedIndex = e.detail;
   }
 
+  async function loadStreak() {
+    if (!habitApi) return;
+    const res = await habitApi.GetStreak();
+    if (res.success) {
+      streak = res.data || { current: 0, longest: 0 };
+    }
+  }
+
+  async function completeReview() {
+    if (!habitApi) return;
+    const res = await habitApi.CompleteDailyReview();
+    if (res.success) {
+      todayReview = res.data;
+      await loadStreak();
+    }
+  }
+
   $: doneCount = tasks.filter(t => t.status === 'done').length;
 </script>
 
@@ -179,6 +203,12 @@
   <header>
     <h1>goatodo</h1>
   </header>
+
+  <HabitDashboard
+    {streak}
+    {todayReview}
+    on:completeReview={completeReview}
+  />
 
   {#if isAdding}
     <AddTask
