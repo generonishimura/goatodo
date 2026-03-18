@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/i-nishimura/goatodo/domain/shared"
@@ -105,13 +107,22 @@ func scanRow(s scanner) shared.Result[*task.Task] {
 	)
 	err := s.Scan(&id, &title, &description, &status, &priority, &createdAtStr, &completedAtStr)
 	if err != nil {
-		return shared.Err[*task.Task]("task not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return shared.Err[*task.Task]("task not found")
+		}
+		return shared.Err[*task.Task](fmt.Sprintf("failed to scan task: %v", err))
 	}
 
-	createdAt, _ := time.Parse(timeFormat, createdAtStr)
+	createdAt, err := time.Parse(timeFormat, createdAtStr)
+	if err != nil {
+		return shared.Err[*task.Task](fmt.Sprintf("failed to parse created_at: %v", err))
+	}
 	var completedAt *time.Time
 	if completedAtStr != nil {
-		t, _ := time.Parse(timeFormat, *completedAtStr)
+		t, err := time.Parse(timeFormat, *completedAtStr)
+		if err != nil {
+			return shared.Err[*task.Task](fmt.Sprintf("failed to parse completed_at: %v", err))
+		}
 		completedAt = &t
 	}
 
