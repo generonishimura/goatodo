@@ -1,79 +1,222 @@
 <script>
-  import logo from './assets/images/logo-universal.png'
-  import {Greet} from '../wailsjs/go/main/App.js'
+  import { onMount } from 'svelte';
+  import TaskList from './lib/components/TaskList.svelte';
+  import AddTask from './lib/components/AddTask.svelte';
+  import StatusBar from './lib/components/StatusBar.svelte';
 
-  let resultText = "Please enter your name below 👇"
-  let name
+  let tasks = [];
+  let selectedIndex = 0;
+  let isAdding = false;
+  let editingId = null;
+  let addTaskComponent;
+  let mode = 'normal';
 
-  function greet() {
-    Greet(name).then(result => resultText = result)
+  // These will be provided by Wails bindings
+  let api = null;
+
+  onMount(async () => {
+    // Dynamic import of Wails bindings (generated at build time)
+    try {
+      const mod = await import('../wailsjs/go/presenter/TaskHandler.js');
+      api = mod;
+      await loadTasks();
+    } catch (e) {
+      console.warn('Wails bindings not available (dev mode?):', e);
+    }
+  });
+
+  async function loadTasks() {
+    if (!api) return;
+    const res = await api.ListTasks();
+    if (res.success) {
+      tasks = res.data || [];
+    }
   }
+
+  async function addTask(e) {
+    if (!api) return;
+    const { title } = e.detail;
+    const res = await api.CreateTask(title);
+    if (res.success) {
+      await loadTasks();
+      isAdding = false;
+      mode = 'normal';
+    }
+  }
+
+  async function toggleStatus(e) {
+    if (!api) return;
+    const task = e.detail;
+    let nextStatus;
+    if (task.status === 'todo') nextStatus = 'doing';
+    else if (task.status === 'doing') nextStatus = 'done';
+    else return;
+
+    const res = await api.UpdateTask({ id: task.id, status: nextStatus });
+    if (res.success) {
+      await loadTasks();
+    }
+  }
+
+  async function updateTask(e) {
+    if (!api) return;
+    const { id, title } = e.detail;
+    const res = await api.UpdateTask({ id, title });
+    if (res.success) {
+      await loadTasks();
+    }
+  }
+
+  async function deleteSelectedTask() {
+    if (!api || tasks.length === 0) return;
+    const task = tasks[selectedIndex];
+    if (!task) return;
+    const res = await api.DeleteTask(task.id);
+    if (res.success) {
+      await loadTasks();
+      if (selectedIndex >= tasks.length) {
+        selectedIndex = Math.max(0, tasks.length - 1);
+      }
+    }
+  }
+
+  async function setPriority(priority) {
+    if (!api || tasks.length === 0) return;
+    const task = tasks[selectedIndex];
+    if (!task) return;
+    const res = await api.UpdateTask({ id: task.id, priority });
+    if (res.success) {
+      await loadTasks();
+    }
+  }
+
+  function handleKeydown(e) {
+    // Don't handle keys when adding or editing
+    if (isAdding || editingId) return;
+
+    switch (e.key) {
+      case 'j':
+        e.preventDefault();
+        if (selectedIndex < tasks.length - 1) selectedIndex++;
+        break;
+      case 'k':
+        e.preventDefault();
+        if (selectedIndex > 0) selectedIndex--;
+        break;
+      case 'a':
+        e.preventDefault();
+        isAdding = true;
+        mode = 'insert';
+        break;
+      case 'x':
+        e.preventDefault();
+        if (tasks.length > 0) {
+          toggleStatus({ detail: tasks[selectedIndex] });
+        }
+        break;
+      case 'e':
+      case 'Enter':
+        e.preventDefault();
+        if (tasks.length > 0) {
+          editingId = tasks[selectedIndex].id;
+          mode = 'edit';
+        }
+        break;
+      case 'd':
+        e.preventDefault();
+        deleteSelectedTask();
+        break;
+      case '1':
+        e.preventDefault();
+        setPriority(1);
+        break;
+      case '2':
+        e.preventDefault();
+        setPriority(2);
+        break;
+      case '3':
+        e.preventDefault();
+        setPriority(3);
+        break;
+      case '0':
+        e.preventDefault();
+        setPriority(0);
+        break;
+      case 'G':
+        e.preventDefault();
+        selectedIndex = tasks.length - 1;
+        break;
+      case 'g':
+        e.preventDefault();
+        selectedIndex = 0;
+        break;
+    }
+  }
+
+  function handleCancelAdd() {
+    isAdding = false;
+    mode = 'normal';
+  }
+
+  function handleEditDone() {
+    editingId = null;
+    mode = 'normal';
+  }
+
+  function handleSelect(e) {
+    selectedIndex = e.detail;
+  }
+
+  $: doneCount = tasks.filter(t => t.status === 'done').length;
 </script>
 
+<svelte:window on:keydown={handleKeydown} />
+
 <main>
-  <img alt="Wails logo" id="logo" src="{logo}">
-  <div class="result" id="result">{resultText}</div>
-  <div class="input-box" id="input">
-    <input autocomplete="off" bind:value={name} class="input" id="name" type="text"/>
-    <button class="btn" on:click={greet}>Greet</button>
-  </div>
+  <header>
+    <h1>goatodo</h1>
+  </header>
+
+  {#if isAdding}
+    <AddTask
+      bind:this={addTaskComponent}
+      on:add={addTask}
+      on:cancel={handleCancelAdd}
+    />
+  {/if}
+
+  <TaskList
+    {tasks}
+    {selectedIndex}
+    {editingId}
+    on:select={handleSelect}
+    on:toggleStatus={toggleStatus}
+    on:update={updateTask}
+    on:editDone={handleEditDone}
+  />
+
+  <StatusBar total={tasks.length} done={doneCount} {mode} />
 </main>
 
 <style>
-
-  #logo {
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+  main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
   }
 
-  .result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
+  header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    -webkit-app-region: drag;
   }
 
-  .input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
-    border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
-    cursor: pointer;
+  h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
   }
-
-  .input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
-  }
-
-  .input-box .input {
-    border: none;
-    border-radius: 3px;
-    outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .input-box .input:hover {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  .input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
 </style>
