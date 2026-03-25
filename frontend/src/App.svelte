@@ -35,6 +35,7 @@
       habitApi = habitMod;
       await loadTasks();
       await loadStreak();
+      await loadTodayReview();
     } catch (e) {
       console.warn('Wails bindings not available (dev mode?):', e);
     }
@@ -189,6 +190,14 @@
     selectedIndex = e.detail;
   }
 
+  async function loadTodayReview() {
+    if (!habitApi) return;
+    const res = await habitApi.GetTodayReview();
+    if (res.success && res.data) {
+      todayReview = res.data;
+    }
+  }
+
   async function loadStreak() {
     if (!habitApi) return;
     const res = await habitApi.GetStreak();
@@ -233,7 +242,7 @@
       on:click={toggleTheme}
       aria-label="Toggle theme"
     >
-      {theme === 'dark' ? '&#9788;' : '&#9790;'}
+      {theme === 'dark' ? '☀' : '☾'}
     </button>
   </header>
 

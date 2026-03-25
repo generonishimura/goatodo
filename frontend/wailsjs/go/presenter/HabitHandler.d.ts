@@ -5,3 +5,5 @@ import {presenter} from '../models';
 export function CompleteDailyReview():Promise<presenter.TaskResponse>;
 
 export function GetStreak():Promise<presenter.TaskResponse>;
+
+export function GetTodayReview():Promise<presenter.TaskResponse>;

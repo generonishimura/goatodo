@@ -9,3 +9,7 @@ export function CompleteDailyReview() {
 export function GetStreak() {
   return window['go']['presenter']['HabitHandler']['GetStreak']();
 }
+
+export function GetTodayReview() {
+  return window['go']['presenter']['HabitHandler']['GetTodayReview']();
+}
