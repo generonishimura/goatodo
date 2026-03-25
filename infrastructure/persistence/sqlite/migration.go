@@ -25,7 +25,6 @@ func Migrate(db *sql.DB) error {
 			total_task_count INTEGER NOT NULL DEFAULT 0,
 			completed_at TEXT
 		);
-		CREATE INDEX IF NOT EXISTS idx_daily_reviews_date ON daily_reviews(date);
 		CREATE INDEX IF NOT EXISTS idx_daily_reviews_status ON daily_reviews(status);
 	`)
 	return err

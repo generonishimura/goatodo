@@ -28,7 +28,7 @@ func (r *DailyReviewRepository) Save(review *habit.DailyReview) shared.Result[bo
 	_, err := r.db.Exec(`
 		INSERT INTO daily_reviews (id, date, status, completed_task_count, total_task_count, completed_at)
 		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT(id) DO UPDATE SET
+		ON CONFLICT(date) DO UPDATE SET
 			status = excluded.status,
 			completed_task_count = excluded.completed_task_count,
 			total_task_count = excluded.total_task_count,

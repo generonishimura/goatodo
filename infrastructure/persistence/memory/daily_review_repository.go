@@ -20,10 +20,14 @@ func NewDailyReviewRepository() *DailyReviewRepository {
 	}
 }
 
+func dateKey(date time.Time) string {
+	return date.Format("2006-01-02")
+}
+
 func (r *DailyReviewRepository) Save(review *habit.DailyReview) shared.Result[bool] {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.reviews[review.ID()] = review
+	r.reviews[dateKey(review.Date())] = review
 	return shared.Ok(true)
 }
 
@@ -31,10 +35,8 @@ func (r *DailyReviewRepository) FindByDate(date time.Time) shared.Result[*habit.
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	normalized := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-	for _, review := range r.reviews {
-		if review.Date().Equal(normalized) {
-			return shared.Ok(review)
-		}
+	if review, ok := r.reviews[dateKey(normalized)]; ok {
+		return shared.Ok(review)
 	}
 	return shared.Err[*habit.DailyReview]("daily review not found")
 }
@@ -60,9 +62,11 @@ func (r *DailyReviewRepository) FindByDateRange(from, to time.Time) shared.Resul
 func (r *DailyReviewRepository) Delete(id string) shared.Result[bool] {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if _, ok := r.reviews[id]; !ok {
-		return shared.Err[bool]("daily review not found")
+	for key, review := range r.reviews {
+		if review.ID() == id {
+			delete(r.reviews, key)
+			return shared.Ok(true)
+		}
 	}
-	delete(r.reviews, id)
-	return shared.Ok(true)
+	return shared.Err[bool]("daily review not found")
 }
