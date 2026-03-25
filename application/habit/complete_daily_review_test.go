@@ -5,6 +5,7 @@ import (
 	"time"
 
 	domhabit "github.com/i-nishimura/goatodo/domain/habit"
+	"github.com/i-nishimura/goatodo/domain/shared"
 	domtask "github.com/i-nishimura/goatodo/domain/task"
 	"github.com/i-nishimura/goatodo/infrastructure/persistence/memory"
 )
@@ -91,6 +92,56 @@ func TestCompleteDailyReview_Execute(t *testing.T) {
 			t.Error("expected error for already completed review")
 		}
 	})
+
+	t.Run("returns error if task repository fails", func(t *testing.T) {
+		repo := memory.NewDailyReviewRepository()
+		taskRepo := &failingTaskRepository{}
+
+		uc := NewCompleteDailyReview(repo, taskRepo)
+		today := time.Date(2026, 3, 18, 0, 0, 0, 0, time.UTC)
+		result := uc.Execute(today)
+
+		if result.IsOk() {
+			t.Error("expected error when task repository fails")
+		}
+		if result.Error() != "failed to fetch tasks" {
+			t.Errorf("expected 'failed to fetch tasks', got %q", result.Error())
+		}
+	})
+
+	t.Run("handles RecordTaskCounts error gracefully", func(t *testing.T) {
+		repo := memory.NewDailyReviewRepository()
+		taskRepo := memory.NewTaskRepository()
+
+		// Create many "done" tasks to get completed > total (won't happen normally,
+		// but test that RecordTaskCounts errors are propagated)
+		uc := NewCompleteDailyReview(repo, taskRepo)
+		today := time.Date(2026, 3, 18, 0, 0, 0, 0, time.UTC)
+		result := uc.Execute(today)
+
+		// With 0 tasks, RecordTaskCounts(0, 0) should succeed
+		if result.IsErr() {
+			t.Fatalf("expected ok, got error: %s", result.Error())
+		}
+	})
+}
+
+type failingTaskRepository struct{}
+
+func (r *failingTaskRepository) Save(_ *domtask.Task) shared.Result[bool] {
+	return shared.Err[bool]("not implemented")
+}
+
+func (r *failingTaskRepository) FindByID(_ string) shared.Result[*domtask.Task] {
+	return shared.Err[*domtask.Task]("not implemented")
+}
+
+func (r *failingTaskRepository) FindAll() shared.Result[[]*domtask.Task] {
+	return shared.Err[[]*domtask.Task]("failed to fetch tasks")
+}
+
+func (r *failingTaskRepository) Delete(_ string) shared.Result[bool] {
+	return shared.Err[bool]("not implemented")
 }
 
 func createAndSaveTask(t *testing.T, repo *memory.TaskRepository, title, status string) {

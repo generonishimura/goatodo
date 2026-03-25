@@ -113,6 +113,19 @@ func TestDailyReview_Complete(t *testing.T) {
 			t.Errorf("expected %q, got %q", ErrAlreadyCompleted, result.Error())
 		}
 	})
+
+	t.Run("rejects completing a skipped review with ErrNotPending", func(t *testing.T) {
+		review := NewDailyReview(time.Now()).Value()
+		review.Skip()
+
+		result := review.Complete()
+		if result.IsOk() {
+			t.Error("expected error for completing skipped review")
+		}
+		if result.Error() != ErrNotPending {
+			t.Errorf("expected %q, got %q", ErrNotPending, result.Error())
+		}
+	})
 }
 
 func TestDailyReview_Skip(t *testing.T) {

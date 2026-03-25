@@ -23,28 +23,34 @@ func (uc *CompleteDailyReview) Execute(date time.Time) shared.Result[*domhabit.D
 	var review *domhabit.DailyReview
 	if findResult.IsOk() {
 		review = findResult.Value()
-	} else {
+	} else if findResult.Error() == domhabit.ErrNotFound {
 		newResult := domhabit.NewDailyReview(date)
 		if newResult.IsErr() {
 			return newResult
 		}
 		review = newResult.Value()
+	} else {
+		return shared.Err[*domhabit.DailyReview](findResult.Error())
 	}
 
 	// Count tasks
 	tasksResult := uc.taskRepo.FindAll()
-	completed, total := 0, 0
-	if tasksResult.IsOk() {
-		tasks := tasksResult.Value()
-		total = len(tasks)
-		for _, t := range tasks {
-			if t.Status() == domtask.StatusDone {
-				completed++
-			}
+	if tasksResult.IsErr() {
+		return shared.Err[*domhabit.DailyReview](tasksResult.Error())
+	}
+	tasks := tasksResult.Value()
+	completed, total := 0, len(tasks)
+	for _, t := range tasks {
+		if t.Status() == domtask.StatusDone {
+			completed++
 		}
 	}
 
-	review.RecordTaskCounts(completed, total)
+	// Record task counts before completing
+	recordResult := review.RecordTaskCounts(completed, total)
+	if recordResult.IsErr() {
+		return shared.Err[*domhabit.DailyReview](recordResult.Error())
+	}
 
 	// Complete the review
 	completeResult := review.Complete()

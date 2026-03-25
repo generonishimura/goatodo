@@ -41,8 +41,11 @@ func (r *DailyReview) RecordTaskCounts(completed, total int) shared.Result[bool]
 }
 
 func (r *DailyReview) Complete() shared.Result[bool] {
-	if r.status != ReviewPending {
+	if r.status == ReviewCompleted {
 		return shared.Err[bool](ErrAlreadyCompleted)
+	}
+	if r.status != ReviewPending {
+		return shared.Err[bool](ErrNotPending)
 	}
 	r.status = ReviewCompleted
 	now := time.Now()
